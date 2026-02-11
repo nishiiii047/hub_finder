@@ -166,83 +166,61 @@ def get_shortest_path(graph, start_node, end_node):
     return float('inf'), []
 
 # --- 4. UI ---
-# app.py 内の station_selector 関数を修正
+def get_shortest_path(graph, start_node, end_node):
+    # 乗り換え抵抗（分）: ホーム移動や電車待ち時間として加算
+    TRANSFER_PENALTY = 5.0
 
-# app.py の station_selector 関数をこれに置き換えてください
+    if start_node == end_node: return 0, [start_node]
+    
+    # 優先度付きキュー: (経過時間, 現在地, 経路リスト, 直前の路線名)
+    # スタート地点では「直前の路線」は None
+    queue = [(0, start_node, [start_node], None)]
+    
+    # 訪問済み記録: (ノード, 到着した路線) -> 最短時間
+    # 同じ駅でも「銀座線で来た場合」と「JRで来た場合」で次の展開が違うため区別する
+    visited = {}
 
-def station_selector(label, key_prefix):
-    # --- 1. 全駅のリストアップと整形 ---
-    # 選択肢リストを作成: [{"display": "蒲田 【JR京浜東北線】", "raw": "蒲田", "line": "JR京浜東北線", "reading": "かまた"}, ...]
-    all_options = []
-    for line, stations in data.TOKYO_LINES.items():
-        for s in stations:
-            reading = data.STATION_READINGS.get(s, "")
-            all_options.append({
-                "display": f"{s} 【{line}】", # UI表示用
-                "raw": s,                     # ロジック用（駅名のみ）
-                "line": line,                 # フィルタ用
-                "reading": reading            # 検索用
-            })
-
-    # --- 2. 検索・絞り込みUI ---
-    # コンテナを使って視覚的にグループ化
-    with st.container():
-        col1, col2 = st.columns([1, 1])
+    while queue:
+        cost, current_node, path, prev_line = heapq.heappop(queue)
         
-        with col1:
-            # A. ひらがな検索（全路線から検索）
-            search_query = st.text_input(
-                f"{label}: 駅名検索", 
-                key=f"{key_prefix}_search",
-                placeholder="ひらがな入力 (例: か)",
-                help="入力すると自動で候補が絞り込まれます"
-            )
+        if current_node == end_node: return cost, path
         
-        with col2:
-            # B. 路線フィルター（任意）
-            line_options = ["すべての路線"] + list(data.TOKYO_LINES.keys())
-            filter_line = st.selectbox(
-                f"{label}: 路線絞り込み", 
-                line_options, 
-                key=f"{key_prefix}_filter"
-            )
-
-    # --- 3. フィルタリング処理 ---
-    filtered_list = []
-    for opt in all_options:
-        # 路線フィルターのチェック
-        if filter_line != "すべての路線" and opt["line"] != filter_line:
+        # 既により早いルートでこの駅・この路線で到着しているならスキップ
+        state_key = (current_node, prev_line)
+        if state_key in visited and visited[state_key] <= cost:
             continue
-        
-        # テキスト検索のチェック
-        if search_query:
-            # 駅名(raw) または 読み仮名(reading) に検索ワードが含まれるか
-            if (search_query not in opt["raw"]) and (search_query not in opt["reading"]):
-                continue
-        
-        filtered_list.append(opt["display"])
+        visited[state_key] = cost
 
-    # 検索結果が0件の場合のハンドリング
-    if not filtered_list:
-        filtered_list = ["(候補なし)"]
+        if current_node in graph:
+            for neighbor, weight in graph[current_node].items():
+                # 次の移動で使う路線を判定
+                next_line = get_connecting_line_name(current_node, neighbor)
+                
+                # 追加コストの計算
+                added_cost = 0
+                
+                # 路線が変わる場合（乗り換え）の判定
+                if prev_line is not None and next_line != prev_line:
+                    # 1. 電車同士の乗り換え（例: 山手線 -> 中央線）
+                    if prev_line != "徒歩" and next_line != "徒歩":
+                        added_cost = TRANSFER_PENALTY
+                    
+                    # 2. 徒歩から電車への乗り換え（例: 徒歩移動 -> 銀座線）
+                    #    ※改札入り、ホームへ降り、電車を待つ時間
+                    elif prev_line == "徒歩" and next_line != "徒歩":
+                        added_cost = TRANSFER_PENALTY
+                        
+                    # 3. 電車から徒歩へ（例: 山手線 -> 徒歩移動）
+                    #    ※降りて歩き出すだけなのでペナルティなし（歩行時間はweightに含まれる）
+                    else:
+                        added_cost = 0
+                
+                new_cost = cost + weight + added_cost
+                
+                # キューに追加
+                heapq.heappush(queue, (new_cost, neighbor, path + [neighbor], next_line))
 
-    # --- 4. 最終選択プルダウン ---
-    selected_display = st.selectbox(
-        f"{label}: 駅を選択", 
-        filtered_list, 
-        key=f"{key_prefix}_final"
-    )
-
-    # --- 5. 値の取り出し ---
-    # "(候補なし)" が選ばれている場合は None を返すなどの処理が必要ですが、
-    # ここでは便宜上、選択肢の文字列操作で駅名を取り出します
-    if selected_display == "(候補なし)":
-        return None # または適当なデフォルト値
-    
-    # "蒲田 【JR京浜東北線】" -> " 【" で分割して前の部分 "蒲田" を取得
-    selected_station = selected_display.split(" 【")[0]
-    
-    return selected_station
+    return float('inf'), []
 
 st.title("🚉 Hub Finder")
 st.markdown("全員の集合に最適な駅を計算します。")
