@@ -28,12 +28,11 @@ def get_connecting_line_name(station1, station2):
                     return line_name
     return "徒歩"
 
-# app.py の format_route_display をこれに置き換え
+# app.py の format_route_display 関数をこれに置き換えてください
 
 def format_route_display(path, graph):
     """
     パスとグラフデータを受け取り、縦並びの詳細経路文字列を作成する。
-    各区間の所要時間も計算して表示する。
     """
     if not path: return ""
     if len(path) == 1: return f"🏁 {path[0]} (移動なし)"
@@ -52,22 +51,19 @@ def format_route_display(path, graph):
         weight = graph[u].get(v, 0)
         
         if next_line != current_line:
-            # 路線が変わったら、今までのセグメントを保存
             segments.append({
                 "line": current_line,
                 "start": current_start,
                 "end": path[i],
                 "time": current_time
             })
-            # 新しいセグメントの開始
             current_start = path[i]
             current_line = next_line
             current_time = weight
         else:
-            # 同じ路線なら時間を足し合わせる
             current_time += weight
             
-    # 最後のセグメントを追加
+    # 最後のセグメント
     segments.append({
         "line": current_line,
         "start": current_start,
@@ -75,24 +71,25 @@ def format_route_display(path, graph):
         "time": current_time
     })
     
-    # --- 表示用文字列の作成（Markdown形式） ---
+    # --- 表示用文字列の作成 ---
     lines = []
     for i, seg in enumerate(segments):
-        time_str = f"`{int(seg['time'])}分`"
+        # 時間は整数で表示
+        time_str = f"{int(seg['time'])}分"
         
         if seg['line'] == "徒歩":
-            # 徒歩移動（駅間移動など）
-            lines.append(f"🚶 **(徒歩)** （{seg['start']} → {seg['end']}） {time_str}")
+            line_str = f"🚶 **(徒歩)** （{seg['start']} → {seg['end']}） {time_str}"
         else:
-            # 電車移動
-            lines.append(f"🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） {time_str}")
+            line_str = f"🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） {time_str}"
         
-        # 最後の区間でなければ「↓」を表示
+        lines.append(line_str)
+        
+        # 最後の区間でなければ矢印を下に追加
         if i < len(segments) - 1:
-            # もし徒歩セグメントへのつなぎなら、単なる矢印
             lines.append("↓")
             
-    return "  \n".join(lines) # 改行コードを入れて縦並びにする
+    # Markdownの改行（半角スペース2つ+改行）を使って結合
+    return "  \n".join(lines)
 
 # --- 2. グラフ構築 ---
 def build_graph():
@@ -294,6 +291,7 @@ if pressed_efficiency or pressed_fairness:
         is_reachable = True
 
         for m in members_data:
+            # 経路計算
             t1, path1 = get_shortest_path(station_graph, m["current"], candidate)
             t2, path2 = get_shortest_path(station_graph, candidate, m["next"])
             
@@ -304,17 +302,20 @@ if pressed_efficiency or pressed_fairness:
             total_t = t1 + t2
             individual_times.append(total_t)
             
-            # 【変更点】 station_graph を引数として渡す
+            # 経路文字列の生成
             route_str_1 = format_route_display(path1, station_graph)
             route_str_2 = format_route_display(path2, station_graph)
             
-            # 往路と復路を分けて見やすく格納
-            # Streamlitのマークダウンで見やすくするために、少し改行などを工夫
-            details.append(
-                f"##### 👤 {m['name']} (計 {int(total_t)}分)\n"
-                f"**往:** \n{route_str_1}  \n"  # スペース2つで改行
-                f"**復:** \n{route_str_2}"
+            # 【変更点】 理想のフォーマットに合わせて結合
+            # 往路ヘッダー + 改行 + 往路ルート + 改行2つ + 復路ヘッダー...
+            member_detail = (
+                f"##### 👤 {m['name']} (計 {int(total_t)}分)\n\n"
+                f"**往路:** {int(t1)}分  \n"
+                f"{route_str_1}  \n\n" 
+                f"**復路:** {int(t2)}分  \n"
+                f"{route_str_2}"
             )
+            details.append(member_detail)
 
         if is_reachable:
             sum_time = sum(individual_times)
@@ -332,37 +333,34 @@ if pressed_efficiency or pressed_fairness:
     progress_bar.progress(1.0)
 
     if results:
-        # ソートロジック（変更なし）
+        # ソートロジック
         if pressed_efficiency:
             results.sort(key=lambda x: x["total_time"])
             mode_name = "効率重視"
-            main_metric_label = "全員の移動時間合計"
-            main_metric_val = results[0]['total_time']
-            sub_metric_label = "最大移動時間"
-            sub_metric_val = results[0]['max_time']
+            metric_label = "全員の移動時間合計"
+            metric_val = results[0]['total_time']
+            sub_metric = f"最大移動: {results[0]['max_time']:.1f} 分"
         else:
             results.sort(key=lambda x: (x["max_time"], x["total_time"]))
             mode_name = "公平重視"
-            main_metric_label = "一番遠い人の移動時間"
-            main_metric_val = results[0]['max_time']
-            sub_metric_label = "合計移動時間"
-            sub_metric_val = results[0]['total_time']
+            metric_label = "一番遠い人の移動時間"
+            metric_val = results[0]['max_time']
+            sub_metric = f"合計時間: {results[0]['total_time']:.1f} 分"
 
         best = results[0]
         
         st.success(f"👑 最適な集合場所: **{best['station']}** ({mode_name})")
         
-        col_res1, col_res2 = st.columns(2)
-        col_res1.metric(main_metric_label, f"{main_metric_val:.1f} 分")
-        col_res2.metric(f"参考: {sub_metric_label}", f"{sub_metric_val:.1f} 分")
+        col1, col2 = st.columns(2)
+        col1.metric(metric_label, f"{metric_val:.1f} 分")
+        col2.metric("参考指標", sub_metric)
         
-        # 詳細表示エリア
         with st.expander("詳細経路を見る", expanded=True):
             st.markdown(f"### 📍 集合場所: {best['station']}")
             st.markdown("---")
             for d in best["details"]:
                 st.markdown(d)
-                st.markdown("---") # メンバーごとの区切り線
+                st.markdown("---")
         
         st.write("#### 🥈 その他の候補")
         for r in results[1:6]:
