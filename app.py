@@ -28,23 +28,15 @@ def get_connecting_line_name(station1, station2):
                     return line_name
     return "徒歩"
 
-# app.py の format_route_display 関数をこれに置き換えてください
-
 def format_route_display(path, graph):
-    """
-    パスとグラフデータを受け取り、縦並びの詳細経路文字列を作成する。
-    """
     if not path: return ""
     if len(path) == 1: return f"🏁 {path[0]} (移動なし)"
 
     segments = []
-    
     current_start = path[0]
-    # 最初の区間の路線と時間を取得
     current_line = get_connecting_line_name(path[0], path[1])
     current_time = graph[path[0]].get(path[1], 0)
     
-    # パスを走査してセグメント（同じ路線の塊）にまとめる
     for i in range(1, len(path) - 1):
         u, v = path[i], path[i+1]
         next_line = get_connecting_line_name(u, v)
@@ -63,7 +55,6 @@ def format_route_display(path, graph):
         else:
             current_time += weight
             
-    # 最後のセグメント
     segments.append({
         "line": current_line,
         "start": current_start,
@@ -71,11 +62,10 @@ def format_route_display(path, graph):
         "time": current_time
     })
     
-    # --- 表示用文字列の作成 ---
     lines = []
     for i, seg in enumerate(segments):
-        # 時間は整数で表示
-        time_str = f"{int(seg['time'])}分"
+        # 【変更点】 時間の前にセミコロンをつける
+        time_str = f"; {int(seg['time'])}分"
         
         if seg['line'] == "徒歩":
             line_str = f"🚶 **(徒歩)** （{seg['start']} → {seg['end']}） {time_str}"
@@ -83,12 +73,9 @@ def format_route_display(path, graph):
             line_str = f"🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） {time_str}"
         
         lines.append(line_str)
-        
-        # 最後の区間でなければ矢印を下に追加
         if i < len(segments) - 1:
             lines.append("↓")
             
-    # Markdownの改行（半角スペース2つ+改行）を使って結合
     return "  \n".join(lines)
 
 # --- 2. グラフ構築 ---
@@ -268,7 +255,7 @@ for i in range(num_members):
     st.subheader(f"👤 メンバー {i+1}")
     c_st = station_selector("現在地", f"m{i}_curr")
     n_st = station_selector("次の予定", f"m{i}_next")
-    members_data.append({"name": f"M{i+1}", "current": c_st, "next": n_st})
+    members_data.append({"name": f"メンバー{i+1}", "current": c_st, "next": n_st})
     st.markdown("---")
 
 # --- ボタンエリア（横並び） ---
@@ -306,13 +293,12 @@ if pressed_efficiency or pressed_fairness:
             route_str_1 = format_route_display(path1, station_graph)
             route_str_2 = format_route_display(path2, station_graph)
             
-            # 【変更点】 理想のフォーマットに合わせて結合
-            # 往路ヘッダー + 改行 + 往路ルート + 改行2つ + 復路ヘッダー...
+            # 【変更点】 ヘッダー部分もセミコロン区切りに変更
             member_detail = (
-                f"##### 👤 {m['name']} (計 {int(total_t)}分)\n\n"
-                f"**往路:** {int(t1)}分  \n"
+                f"##### 👤 {m['name']} ; {int(total_t)}分\n\n"
+                f"**往路** ; {int(t1)}分  \n"
                 f"{route_str_1}  \n\n" 
-                f"**復路:** {int(t2)}分  \n"
+                f"**復路** ; {int(t2)}分  \n"
                 f"{route_str_2}"
             )
             details.append(member_detail)
