@@ -141,14 +141,39 @@ def get_shortest_path(graph, start_node, end_node):
     return float('inf'), []
 
 # --- 4. UI ---
+# app.py 内の station_selector 関数を修正
+
 def station_selector(label, key_prefix):
     col1, col2 = st.columns(2)
+    
     with col1:
         lines = list(data.TOKYO_LINES.keys())
         selected_line = st.selectbox(f"{label}路線", lines, key=f"{key_prefix}_line")
+    
     with col2:
-        stations = data.TOKYO_LINES[selected_line]
-        selected_station = st.selectbox(f"{label}駅", stations, key=f"{key_prefix}_station")
+        # その路線の駅リストを取得
+        stations_raw = data.TOKYO_LINES[selected_line]
+        
+        # 表示用のリストを作成（例: "蒲田" → "蒲田 【かまた】"）
+        display_options = []
+        for s in stations_raw:
+            reading = data.STATION_READINGS.get(s, "") # 読み仮名を取得、なければ空文字
+            if reading:
+                display_options.append(f"{s} 【{reading}】")
+            else:
+                display_options.append(s)
+        
+        # セレクトボックスを表示
+        selected_display = st.selectbox(
+            f"{label}駅", 
+            display_options, 
+            key=f"{key_prefix}_station"
+        )
+        
+        # 選択された文字列（"蒲田 【かまた】"）から、元の駅名（"蒲田"）だけを取り出す
+        # 【 】で分割して最初の部分を取得
+        selected_station = selected_display.split(" 【")[0]
+        
     return selected_station
 
 st.title("🚉 Hub Finder")
