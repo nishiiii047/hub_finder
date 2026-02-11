@@ -36,7 +36,7 @@ def calculate_travel_time(route, start_idx, end_idx):
             loc2 = data.STATION_LOCATIONS[s2]
             dist = calculate_distance_km(loc1[0], loc1[1], loc2[0], loc2[1])
             # 【修正済み】時間 = (距離 / 時速)*60 + 停車ロス(0.5分)
-            t = (dist / route.speed_kmh) * 60 + 0.5
+            t = (dist / route.speed_kmh) * 60 + 0.75
             
         total_time += max(t, 0.5)
     return total_time
