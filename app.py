@@ -143,6 +143,8 @@ def get_shortest_path(graph, start_node, end_node):
 # --- 4. UI ---
 # app.py 内の station_selector 関数を修正
 
+# app.py の station_selector 関数をこれに置き換えてください
+
 def station_selector(label, key_prefix):
     col1, col2 = st.columns(2)
     
@@ -151,28 +153,40 @@ def station_selector(label, key_prefix):
         selected_line = st.selectbox(f"{label}路線", lines, key=f"{key_prefix}_line")
     
     with col2:
-        # その路線の駅リストを取得
-        stations_raw = data.TOKYO_LINES[selected_line]
+        # その路線の全駅リストを取得
+        stations_all = data.TOKYO_LINES[selected_line]
         
-        # 表示用のリストを作成（例: "蒲田" → "蒲田 【かまた】"）
-        display_options = []
-        for s in stations_raw:
-            reading = data.STATION_READINGS.get(s, "") # 読み仮名を取得、なければ空文字
-            if reading:
-                display_options.append(f"{s} 【{reading}】")
-            else:
-                display_options.append(s)
-        
-        # セレクトボックスを表示
-        selected_display = st.selectbox(
-            f"{label}駅", 
-            display_options, 
-            key=f"{key_prefix}_station"
+        # --- 1. ひらがな検索用のフィルターボックス ---
+        # label_visibility="collapsed" にして見た目をシンプルに
+        search_query = st.text_input(
+            f"{label}駅を検索", 
+            key=f"{key_prefix}_search",
+            placeholder="ひらがなで検索 (例: か)",
+            label_visibility="collapsed" 
         )
         
-        # 選択された文字列（"蒲田 【かまた】"）から、元の駅名（"蒲田"）だけを取り出す
-        # 【 】で分割して最初の部分を取得
-        selected_station = selected_display.split(" 【")[0]
+        # --- 2. フィルタリング処理 ---
+        filtered_stations = []
+        if search_query:
+            # 入力がある場合、駅名か読み仮名にヒットするものだけ残す
+            for s in stations_all:
+                reading = data.STATION_READINGS.get(s, "")
+                if search_query in s or search_query in reading:
+                    filtered_stations.append(s)
+            
+            # 検索結果が0件なら、使い勝手のため全件表示に戻す（または空にする）
+            if not filtered_stations:
+                filtered_stations = stations_all
+        else:
+            # 入力がない場合は全件表示
+            filtered_stations = stations_all
+
+        # --- 3. セレクトボックス（表示は漢字のまま！） ---
+        selected_station = st.selectbox(
+            f"{label}駅", 
+            filtered_stations, 
+            key=f"{key_prefix}_station"
+        )
         
     return selected_station
 
