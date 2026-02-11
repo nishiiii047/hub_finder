@@ -28,11 +28,14 @@ def get_connecting_line_name(station1, station2):
                     return line_name
     return "徒歩"
 
+# app.py の format_route_display 関数
+
 def format_route_display(path, graph):
     if not path: return ""
     if len(path) == 1: return f"🏁 {path[0]} (移動なし)"
 
     segments = []
+    
     current_start = path[0]
     current_line = get_connecting_line_name(path[0], path[1])
     current_time = graph[path[0]].get(path[1], 0)
@@ -64,8 +67,8 @@ def format_route_display(path, graph):
     
     lines = []
     for i, seg in enumerate(segments):
-        # 【変更点】 時間の前にセミコロンをつける
-        time_str = f"; {int(seg['time'])}分"
+        # 【修正】 セミコロンを削除し、` ` で時間を囲むだけにする
+        time_str = f"`{int(seg['time'])}分`"
         
         if seg['line'] == "徒歩":
             line_str = f"🚶 **(徒歩)** （{seg['start']} → {seg['end']}） {time_str}"
@@ -293,12 +296,12 @@ if pressed_efficiency or pressed_fairness:
             route_str_1 = format_route_display(path1, station_graph)
             route_str_2 = format_route_display(path2, station_graph)
             
-            # 【変更点】 ヘッダー部分もセミコロン区切りに変更
+            # 【修正】 セミコロンを削除してスペースのみにする
             member_detail = (
-                f"##### 👤 {m['name']} ; {int(total_t)}分\n\n"
-                f"**往路** ; {int(t1)}分  \n"
+                f"##### 👤 {m['name']} `{int(total_t)}分`\n\n"
+                f"**往路** `{int(t1)}分`  \n"
                 f"{route_str_1}  \n\n" 
-                f"**復路** ; {int(t2)}分  \n"
+                f"**復路** `{int(t2)}分`  \n"
                 f"{route_str_2}"
             )
             details.append(member_detail)
