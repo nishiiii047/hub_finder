@@ -10,7 +10,7 @@ LINE_CONFIG = {
     "丸ノ内線": {"speed_kmh": 32.1, "interval_min": 3},  # (現在 32.1 → 変更 +0.0)
     "副都心線": {"speed_kmh": 49.5, "interval_min": 6},  # (現在 49.5 → 変更 +0.0)
     "千代田線": {"speed_kmh": 41.5, "interval_min": 5},  # (現在 41.5 → 変更 +0.0)
-    "半蔵門線": {"speed_kmh": 43.4, "interval_min": 5},  # (現在 47.8 → 変更 -4.4)
+    "半蔵門線": {"speed_kmh": 40.2, "interval_min": 5},  # (現在 43.4 → 変更 -3.2)
     "南北線": {"speed_kmh": 35.0, "interval_min": 6},  # (実測データなし、現在値を維持)
     "日比谷線": {"speed_kmh": 35.8, "interval_min": 5},  # (現在 35.8 → 変更 +0.0)
     "有楽町線": {"speed_kmh": 40.0, "interval_min": 6},  # (実測データなし、現在値を維持)
