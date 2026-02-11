@@ -4,7 +4,7 @@ LINE_CONFIG = {
     "JR中央線(快速)": {"speed_kmh": 48.6, "interval_min": 4},  # (現在 48.6 → 変更 +0.0)
     "JR京浜東北線": {"speed_kmh": 44.0, "interval_min": 5},  # (現在 44.0 → 変更 +0.0)
     "JR埼京線": {"speed_kmh": 60.0, "interval_min": 10},  # (実測データなし、現在値を維持)
-    "JR山手線": {"speed_kmh": 40.8, "interval_min": 3},  # (現在 47.5 → 変更 -6.7)
+    "JR山手線": {"speed_kmh": 42.4, "interval_min": 3},  # (現在 40.8 → 変更 +1.6)
     "JR湘南新宿ライン": {"speed_kmh": 70.0, "interval_min": 15},  # (実測データなし、現在値を維持)
     "JR総武線(各停)": {"speed_kmh": 43.7, "interval_min": 5},  # (現在 43.7 → 変更 +0.0)
     "丸ノ内線": {"speed_kmh": 32.1, "interval_min": 3},  # (現在 32.1 → 変更 +0.0)
