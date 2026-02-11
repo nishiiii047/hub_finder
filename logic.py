@@ -59,8 +59,13 @@ def find_routes_raptor(start_node, end_node, max_transfers=4):
     """
     ラウンドベース探索により、(乗り換え回数, 所要時間) のパレート最適解を探す。
     """
+    # 【修正1】同一駅の場合は適切な結果を返す
     if start_node == end_node:
-        return []
+        return [{
+            "transfers": 0,
+            "total_time": 0,
+            "path_details": []
+        }]
 
     # 【修正】defaultdictを使って、未知の駅キーが来ても無限大を返すようにする
     # best_arrivals[k][station]
@@ -93,19 +98,20 @@ def find_routes_raptor(start_node, end_node, max_transfers=4):
         # 路線ごとのスキャン
         for r_idx, start_s_idx in queue_routes.items():
             route = ALL_ROUTES[r_idx]
+            
+            # === 【修正2】順方向スキャン ===
             current_trip_start_time = float('inf') 
             boarding_station = None
+            boarding_idx = -1
             
-            # 始点以降の駅を順に走査
             for i in range(start_s_idx, len(route.stations)):
                 s_curr = route.stations[i]
                 
                 # A. 降車判定
                 if current_trip_start_time != float('inf'):
-                    travel_t = calculate_travel_time(route, route.stations.index(boarding_station), i)
+                    travel_t = calculate_travel_time(route, boarding_idx, i)
                     arrival_t = current_trip_start_time + travel_t
                     
-                    # defaultdictなので s_curr が未知でもエラーにならない
                     if arrival_t < best_arrivals[k][s_curr]:
                         best_arrivals[k][s_curr] = arrival_t
                         parents[k][s_curr] = {
@@ -123,6 +129,39 @@ def find_routes_raptor(start_node, end_node, max_transfers=4):
                     if prev_t + wait_cost < current_trip_start_time:
                         current_trip_start_time = prev_t + wait_cost
                         boarding_station = s_curr
+                        boarding_idx = i
+            
+            # === 【修正2】逆方向スキャン ===
+            current_trip_start_time = float('inf')
+            boarding_station = None
+            boarding_idx = -1
+            
+            for i in range(start_s_idx, -1, -1):
+                s_curr = route.stations[i]
+                
+                # A. 降車判定
+                if current_trip_start_time != float('inf'):
+                    travel_t = calculate_travel_time(route, boarding_idx, i)
+                    arrival_t = current_trip_start_time + travel_t
+                    
+                    if arrival_t < best_arrivals[k][s_curr]:
+                        best_arrivals[k][s_curr] = arrival_t
+                        parents[k][s_curr] = {
+                            "prev_station": boarding_station,
+                            "line": route.line_name,
+                            "move_time": travel_t,
+                            "wait_time": (current_trip_start_time - best_arrivals[k-1][boarding_station])
+                        }
+                        next_marked_stations.add(s_curr)
+
+                # B. 乗車判定
+                prev_t = best_arrivals[k-1][s_curr]
+                if prev_t != float('inf'):
+                    wait_cost = (route.interval / 2.0) + 2.0
+                    if prev_t + wait_cost < current_trip_start_time:
+                        current_trip_start_time = prev_t + wait_cost
+                        boarding_station = s_curr
+                        boarding_idx = i
 
         marked_stations = next_marked_stations
         if not marked_stations: break
