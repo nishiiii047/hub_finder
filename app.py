@@ -1,6 +1,7 @@
 import streamlit as st
 import heapq
 import math
+import logic
 import data
 
 # --- 1. 計算ヘルパー関数 ---
@@ -310,76 +311,89 @@ pressed_fairness = col2.button("⚖️ 公平重視で検索\n(最大時間 最�
 if pressed_efficiency or pressed_fairness:
     results = []
     progress_bar = st.progress(0)
-    total_candidates = len(all_candidate_stations)
-
-    for idx, candidate in enumerate(all_candidate_stations):
-        individual_times = []
-        details = []
+    total_candidates = len(logic.ALL_ROUTES) * 10 # 候補数（概算）
+    
+    # 全駅を候補としてスキャンするのは重いので、
+    # 簡易的に「山手線・中央線・地下鉄主要駅」など候補を絞るか、
+    # 以前のように graph.keys() を使う
+    candidate_stations = list(data.STATION_LOCATIONS.keys())
+    
+    for idx, candidate in enumerate(candidate_stations):
+        member_results = []
         is_reachable = True
-
+        
+        # 各メンバーについて計算
         for m in members_data:
-            # 経路計算
-            t1, path1 = get_shortest_path(station_graph, m["current"], candidate)
-            t2, path2 = get_shortest_path(station_graph, candidate, m["next"])
+            # logic.py の RAPTOR関数を呼び出す
+            # 戻り値は [{transfers:0, time:30, details:...}, {transfers:1, time:25...}] のリスト
+            routes = logic.find_routes_raptor(m["current"], candidate)
             
-            if t1 == float('inf') or t2 == float('inf'):
+            if not routes:
                 is_reachable = False
                 break
             
-            total_t = t1 + t2
-            individual_times.append(total_t)
-            
-            # 経路文字列の生成
-            route_str_1 = format_route_display(path1, station_graph)
-            route_str_2 = format_route_display(path2, station_graph)
-            
-            # 【修正】 セミコロンを削除してスペースのみにする
-            member_detail = (
-                f"##### 👤 {m['name']} `{int(total_t)}分`\n\n"
-                f"**往路** `{int(t1)}分`  \n"
-                f"{route_str_1}  \n\n" 
-                f"**復路** `{int(t2)}分`  \n"
-                f"{route_str_2}"
-            )
-            details.append(member_detail)
+            # 複数のルートから、モードに合わせて最適な1つを選ぶ
+            # 効率重視なら「時間最小」、公平重視なら...（今回はシンプルに時間最小を採用）
+            best_route = min(routes, key=lambda x: x["total_time"])
+            member_results.append({
+                "name": m["name"],
+                "route": best_route
+            })
 
         if is_reachable:
-            sum_time = sum(individual_times)
-            max_time = max(individual_times)
+            # 全員の時間を集計
+            times = [r["route"]["total_time"] for r in member_results]
+            sum_time = sum(times)
+            max_time = max(times)
+            
+            # 詳細テキストの作成
+            details_text = []
+            for mr in member_results:
+                r = mr["route"]
+                lines_str = []
+                
+                # 待ち時間を含めた詳細表示
+                for seg in r["path_details"]:
+                    wait_str = f"(待`{int(seg['wait'])}分`)" if seg['wait'] > 0 else ""
+                    lines_str.append(f"{wait_str} 🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`")
+                    lines_str.append("↓")
+                
+                # 最後の↓を削除
+                if lines_str: lines_str.pop()
+                
+                details_text.append(
+                    f"##### 👤 {mr['name']} `{int(r['total_time'])}分` (乗換{r['transfers']}回)\n\n" + 
+                    "  \n".join(lines_str)
+                )
+
             results.append({
                 "station": candidate,
                 "total_time": sum_time,
                 "max_time": max_time,
-                "details": details
+                "details": details_text
             })
-        
+            
         if idx % 10 == 0:
-            progress_bar.progress((idx + 1) / total_candidates)
-    
+            progress_bar.progress(min((idx + 1) / len(candidate_stations), 1.0))
+            
     progress_bar.progress(1.0)
 
+    # --- 結果表示（以前と同じ）---
     if results:
-        # ソートロジック
         if pressed_efficiency:
             results.sort(key=lambda x: x["total_time"])
             mode_name = "効率重視"
-            metric_label = "全員の移動時間合計"
-            metric_val = results[0]['total_time']
-            sub_metric = f"最大移動: {results[0]['max_time']:.1f} 分"
         else:
             results.sort(key=lambda x: (x["max_time"], x["total_time"]))
             mode_name = "公平重視"
-            metric_label = "一番遠い人の移動時間"
-            metric_val = results[0]['max_time']
-            sub_metric = f"合計時間: {results[0]['total_time']:.1f} 分"
 
         best = results[0]
         
         st.success(f"👑 最適な集合場所: **{best['station']}** ({mode_name})")
         
         col1, col2 = st.columns(2)
-        col1.metric(metric_label, f"{metric_val:.1f} 分")
-        col2.metric("参考指標", sub_metric)
+        col1.metric("全員の移動時間合計", f"{best['total_time']:.1f} 分")
+        col2.metric("最大移動時間", f"{best['max_time']:.1f} 分")
         
         with st.expander("詳細経路を見る", expanded=True):
             st.markdown(f"### 📍 集合場所: {best['station']}")
@@ -387,13 +401,5 @@ if pressed_efficiency or pressed_fairness:
             for d in best["details"]:
                 st.markdown(d)
                 st.markdown("---")
-        
-        st.write("#### 🥈 その他の候補")
-        for r in results[1:6]:
-            if pressed_efficiency:
-                st.write(f"**{r['station']}**: 合計 {r['total_time']:.1f} 分 (最大 {r['max_time']:.1f} 分)")
-            else:
-                st.write(f"**{r['station']}**: 最大 {r['max_time']:.1f} 分 (合計 {r['total_time']:.1f} 分)")
-            
     else:
         st.error("経路が見つかりませんでした。")
