@@ -307,63 +307,69 @@ pressed_fairness = col2.button("⚖️ 公平重視で検索\n(最大時間 最�
 
 # app.py のボタン押下後の処理ブロックを修正
 
-# どちらかのボタンが押されたら計算を実行
+# --- ボタン押下後の処理（往路・復路の両方を計算する修正版） ---
 if pressed_efficiency or pressed_fairness:
     results = []
     progress_bar = st.progress(0)
-    total_candidates = len(logic.ALL_ROUTES) * 10 # 候補数（概算）
-    
-    # 全駅を候補としてスキャンするのは重いので、
-    # 簡易的に「山手線・中央線・地下鉄主要駅」など候補を絞るか、
-    # 以前のように graph.keys() を使う
     candidate_stations = list(data.STATION_LOCATIONS.keys())
     
     for idx, candidate in enumerate(candidate_stations):
         member_results = []
         is_reachable = True
         
-        # 各メンバーについて計算
         for m in members_data:
-            # logic.py の RAPTOR関数を呼び出す
-            # 戻り値は [{transfers:0, time:30, details:...}, {transfers:1, time:25...}] のリスト
-            routes = logic.find_routes_raptor(m["current"], candidate)
+            # 1. 往路の計算 (現在地 -> 集合場所)
+            outward_routes = logic.find_routes_raptor(m["current"], candidate)
+            # 2. 復路の計算 (集合場所 -> 次の予定)
+            return_routes = logic.find_routes_raptor(candidate, m["next"])
             
-            if not routes:
+            if not outward_routes or not return_routes:
                 is_reachable = False
                 break
             
-            # 複数のルートから、モードに合わせて最適な1つを選ぶ
-            # 効率重視なら「時間最小」、公平重視なら...（今回はシンプルに時間最小を採用）
-            best_route = min(routes, key=lambda x: x["total_time"])
+            # それぞれ最短ルートを選択
+            best_outward = min(outward_routes, key=lambda x: x["total_time"])
+            best_return = min(return_routes, key=lambda x: x["total_time"])
+            
             member_results.append({
                 "name": m["name"],
-                "route": best_route
+                "outward": best_outward,
+                "return": best_return
             })
 
         if is_reachable:
-            # 全員の時間を集計
-            times = [r["route"]["total_time"] for r in member_results]
+            # 往復合計時間を算出
+            times = [r["outward"]["total_time"] + r["return"]["total_time"] for r in member_results]
             sum_time = sum(times)
             max_time = max(times)
             
-            # 詳細テキストの作成
             details_text = []
             for mr in member_results:
-                r = mr["route"]
-                lines_str = []
+                # 往路の表示作成
+                out_lines = []
+                for seg in mr["outward"]["path_details"]:
+                    wait_str = f"(待 `{int(seg['wait'])}分` )" if seg['wait'] > 0 else ""
+                    out_lines.append(f"{wait_str} 🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`")
+                    out_lines.append("↓")
+                if out_lines: out_lines.pop() # 最後の↓を取る
                 
-                # 待ち時間を含めた詳細表示
-                for seg in r["path_details"]:
-                    wait_str = f"(待`{int(seg['wait'])}分`)" if seg['wait'] > 0 else ""
-                    lines_str.append(f"{wait_str} 🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`")
-                    lines_str.append("↓")
+                # 復路の表示作成
+                ret_lines = []
+                for seg in mr["return"]["path_details"]:
+                    wait_str = f"(待 `{int(seg['wait'])}分` )" if seg['wait'] > 0 else ""
+                    ret_lines.append(f"{wait_str} 🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`")
+                    ret_lines.append("↓")
+                if ret_lines: ret_lines.pop() # 最後の↓を取る
                 
-                # 最後の↓を削除
-                if lines_str: lines_str.pop()
+                total_m_time = mr["outward"]["total_time"] + mr["return"]["total_time"]
                 
+                # フォーマットに流し込み
                 details_text.append(
-                    f"##### 👤 {mr['name']} `{int(r['total_time'])}分` (乗換{r['transfers']}回)\n\n" + 
-                    "  \n".join(lines_str)
+                    f"##### 👤 {mr['name']} `{int(total_m_time)}分`  \n\n"
+                    f"**往路** `{int(mr['outward']['total_time'])}分`  \n"
+                    f"{'  \n'.join(out_lines)}  \n\n"
+                    f"**復路** `{int(mr['return']['total_time'])}分`  \n"
+                    f"{'  \n'.join(ret_lines)}"
                 )
 
             results.append({
@@ -377,6 +383,7 @@ if pressed_efficiency or pressed_fairness:
             progress_bar.progress(min((idx + 1) / len(candidate_stations), 1.0))
             
     progress_bar.progress(1.0)
+    # --- 以降、結果表示（ベスト駅のSuccess表示等）は前回と同じ ---
 
     # --- 結果表示（以前と同じ）---
     if results:
