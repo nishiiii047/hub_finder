@@ -21,7 +21,7 @@ LINE_CONFIG = {
     "副都心線":       {"speed_kmh": 52.0, "interval_min": 6},  # 45.0 → 52.0
 
     # --- 都営地下鉄 ---
-    "都営浅草線":     {"speed_kmh": 45.0, "interval_min": 7},  # 40.0 → 48.0
+    "都営浅草線":     {"speed_kmh": 42.0, "interval_min": 7},  # 40.0 → 48.0
     "都営三田線":     {"speed_kmh": 45.0, "interval_min": 6},  # 40.0 → 48.0
     "都営新宿線":     {"speed_kmh": 50.0, "interval_min": 6},  # 45.0 → 52.0
     "都営大江戸線":   {"speed_kmh": 37.0, "interval_min": 6},  # 30.0 → 38.0
