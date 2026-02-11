@@ -29,16 +29,16 @@ def calculate_travel_time(route, start_idx, end_idx):
         s2 = stations[i + step]
         
         # デフォルト所要時間（座標がない場合の保険）
-        t = 3.0 
+        t = 2.0 
         
         if s1 in data.STATION_LOCATIONS and s2 in data.STATION_LOCATIONS:
             loc1 = data.STATION_LOCATIONS[s1]
             loc2 = data.STATION_LOCATIONS[s2]
             dist = calculate_distance_km(loc1[0], loc1[1], loc2[0], loc2[1])
-            # 時間 = (距離*1.2 / 時速)*60 + 停車ロス(1分)
-            t = (dist * 1.2 / route.speed_kmh) * 60 + 1.0
+            # 時間 = (距離 / 時速)*60 + 停車ロス(0.5分)
+            t = (dist / route.speed_kmh) * 60 + 0.5
             
-        total_time += max(t, 1.0)
+        total_time += max(t, 0.5)
     return total_time
 
 # データを「路線オブジェクト」のリストに変換
