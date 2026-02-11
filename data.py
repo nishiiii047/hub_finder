@@ -2,8 +2,8 @@
 # ※アプリ側で座標計算を行いますが、座標データがない場合のバックアップとして使用されます
 LINE_CONFIG = {
     # --- JR（主要幹線） ---
-    "JR山手線":       {"speed_kmh": 38.0, "interval_min": 3},  # 45.0 → 38.0
-    "JR京浜東北線":   {"speed_kmh": 42.0, "interval_min": 5},  # 50.0 → 42.0
+    "JR山手線":       {"speed_kmh": 40.0, "interval_min": 3},  # 45.0 → 38.0
+    "JR京浜東北線":   {"speed_kmh": 45.0, "interval_min": 5},  # 50.0 → 42.0
     "JR中央線(快速)": {"speed_kmh": 50.0, "interval_min": 4},  # 65.0 → 50.0
     "JR総武線(各停)": {"speed_kmh": 38.0, "interval_min": 5},  # 45.0 → 38.0
     "JR埼京線":       {"speed_kmh": 52.0, "interval_min": 10}, # 60.0 → 52.0
