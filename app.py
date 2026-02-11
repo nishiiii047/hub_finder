@@ -364,11 +364,12 @@ if pressed_efficiency or pressed_fairness:
                 total_m_time = mr["outward"]["total_time"] + mr["return"]["total_time"]
                 
                 # フォーマットに流し込み
+                # フォーマットに流し込み
                 details_text.append(
-                    f"##### 👤 {mr['name']} `{int(total_m_time)}分`  \n\n"
-                    f"**往路** `{int(mr['outward']['total_time'])}分`  \n"
-                    f"{'  \n'.join(out_lines)}  \n\n"
-                    f"**復路** `{int(mr['return']['total_time'])}分`  \n"
+                    f"##### 👤 {mr['name']} `{int(total_m_time)}分`\n\n"
+                    f"**往路** `{int(mr['outward']['total_time'])}分`\n"
+                    f"{'  \n'.join(out_lines)}\n\n"
+                    f"**復路** `{int(mr['return']['total_time'])}分`\n"
                     f"{'  \n'.join(ret_lines)}"
                 )
 
