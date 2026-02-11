@@ -149,24 +149,6 @@ def build_graph():
 
 # --- 3. ダイクストラ法 ---
 def get_shortest_path(graph, start_node, end_node):
-    if start_node == end_node: return 0, [start_node]
-    queue = [(0, start_node, [start_node])]
-    visited = {}
-
-    while queue:
-        cost, current_node, path = heapq.heappop(queue)
-        if current_node == end_node: return cost, path
-        if current_node in visited and visited[current_node] <= cost: continue
-        visited[current_node] = cost
-
-        if current_node in graph:
-            for neighbor, weight in graph[current_node].items():
-                new_cost = cost + weight
-                heapq.heappush(queue, (new_cost, neighbor, path + [neighbor]))
-    return float('inf'), []
-
-# --- 4. UI ---
-def get_shortest_path(graph, start_node, end_node):
     # 乗り換え抵抗（分）: ホーム移動や電車待ち時間として加算
     TRANSFER_PENALTY = 5.0
 
@@ -221,6 +203,85 @@ def get_shortest_path(graph, start_node, end_node):
                 heapq.heappush(queue, (new_cost, neighbor, path + [neighbor], next_line))
 
     return float('inf'), []
+
+# --- 4. UI ---
+# app.py 内の station_selector 関数を修正
+
+# app.py の station_selector 関数をこれに置き換えてください
+
+def station_selector(label, key_prefix):
+    # --- 1. 全駅のリストアップと整形 ---
+    # 選択肢リストを作成: [{"display": "蒲田 【JR京浜東北線】", "raw": "蒲田", "line": "JR京浜東北線", "reading": "かまた"}, ...]
+    all_options = []
+    for line, stations in data.TOKYO_LINES.items():
+        for s in stations:
+            reading = data.STATION_READINGS.get(s, "")
+            all_options.append({
+                "display": f"{s} 【{line}】", # UI表示用
+                "raw": s,                     # ロジック用（駅名のみ）
+                "line": line,                 # フィルタ用
+                "reading": reading            # 検索用
+            })
+
+    # --- 2. 検索・絞り込みUI ---
+    # コンテナを使って視覚的にグループ化
+    with st.container():
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            # A. ひらがな検索（全路線から検索）
+            search_query = st.text_input(
+                f"{label}: 駅名検索", 
+                key=f"{key_prefix}_search",
+                placeholder="ひらがな入力 (例: か)",
+                help="入力すると自動で候補が絞り込まれます"
+            )
+        
+        with col2:
+            # B. 路線フィルター（任意）
+            line_options = ["すべての路線"] + list(data.TOKYO_LINES.keys())
+            filter_line = st.selectbox(
+                f"{label}: 路線絞り込み", 
+                line_options, 
+                key=f"{key_prefix}_filter"
+            )
+
+    # --- 3. フィルタリング処理 ---
+    filtered_list = []
+    for opt in all_options:
+        # 路線フィルターのチェック
+        if filter_line != "すべての路線" and opt["line"] != filter_line:
+            continue
+        
+        # テキスト検索のチェック
+        if search_query:
+            # 駅名(raw) または 読み仮名(reading) に検索ワードが含まれるか
+            if (search_query not in opt["raw"]) and (search_query not in opt["reading"]):
+                continue
+        
+        filtered_list.append(opt["display"])
+
+    # 検索結果が0件の場合のハンドリング
+    if not filtered_list:
+        filtered_list = ["(候補なし)"]
+
+    # --- 4. 最終選択プルダウン ---
+    selected_display = st.selectbox(
+        f"{label}: 駅を選択", 
+        filtered_list, 
+        key=f"{key_prefix}_final"
+    )
+
+    # --- 5. 値の取り出し ---
+    # "(候補なし)" が選ばれている場合は None を返すなどの処理が必要ですが、
+    # ここでは便宜上、選択肢の文字列操作で駅名を取り出します
+    if selected_display == "(候補なし)":
+        return None # または適当なデフォルト値
+    
+    # "蒲田 【JR京浜東北線】" -> " 【" で分割して前の部分 "蒲田" を取得
+    selected_station = selected_display.split(" 【")[0]
+    
+    return selected_station
 
 st.title("🚉 Hub Finder")
 st.markdown("全員の集合に最適な駅を計算します。")
