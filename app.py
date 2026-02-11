@@ -349,7 +349,7 @@ if pressed_efficiency or pressed_fairness:
                 out_lines = []
                 for seg in mr["outward"]["path_details"]:
                     wait_str = f"(待 `{int(seg['wait'])}分` )" if seg['wait'] > 0 else ""
-                    out_lines.append(f"{wait_str} 🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`")
+                    out_lines.append(f"🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`{wait_str}")
                     out_lines.append("↓")
                 if out_lines: out_lines.pop() # 最後の↓を取る
                 
@@ -357,7 +357,7 @@ if pressed_efficiency or pressed_fairness:
                 ret_lines = []
                 for seg in mr["return"]["path_details"]:
                     wait_str = f"(待 `{int(seg['wait'])}分` )" if seg['wait'] > 0 else ""
-                    ret_lines.append(f"{wait_str} 🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`")
+                    ret_lines.append(f"🚃 **【{seg['line']}】** （{seg['start']} → {seg['end']}） `{int(seg['time'])}分`{wait_str}")
                     ret_lines.append("↓")
                 if ret_lines: ret_lines.pop() # 最後の↓を取る
                 
