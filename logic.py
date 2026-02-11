@@ -35,7 +35,7 @@ def calculate_travel_time(route, start_idx, end_idx):
             loc1 = data.STATION_LOCATIONS[s1]
             loc2 = data.STATION_LOCATIONS[s2]
             dist = calculate_distance_km(loc1[0], loc1[1], loc2[0], loc2[1])
-            # 時間 = (距離 / 時速)*60 + 停車ロス(0.5分)
+            # 【修正済み】時間 = (距離 / 時速)*60 + 停車ロス(0.5分)
             t = (dist / route.speed_kmh) * 60 + 0.5
             
         total_time += max(t, 0.5)
@@ -125,7 +125,12 @@ def find_routes_raptor(start_node, end_node, max_transfers=4):
                 # B. 乗車判定
                 prev_t = best_arrivals[k-1][s_curr]
                 if prev_t != float('inf'):
-                    wait_cost = (route.interval / 2.0) + 2.0
+                    # 【修正】出発駅（k==1 かつ s_curr==start_node）では待ち時間なし
+                    if k == 1 and s_curr == start_node:
+                        wait_cost = 0  # 出発駅では待ち時間なし
+                    else:
+                        wait_cost = (route.interval / 2.0) + 2.0
+                    
                     if prev_t + wait_cost < current_trip_start_time:
                         current_trip_start_time = prev_t + wait_cost
                         boarding_station = s_curr
@@ -157,7 +162,12 @@ def find_routes_raptor(start_node, end_node, max_transfers=4):
                 # B. 乗車判定
                 prev_t = best_arrivals[k-1][s_curr]
                 if prev_t != float('inf'):
-                    wait_cost = (route.interval / 2.0) + 2.0
+                    # 【修正】出発駅（k==1 かつ s_curr==start_node）では待ち時間なし
+                    if k == 1 and s_curr == start_node:
+                        wait_cost = 0  # 出発駅では待ち時間なし
+                    else:
+                        wait_cost = (route.interval / 2.0) + 2.0
+                    
                     if prev_t + wait_cost < current_trip_start_time:
                         current_trip_start_time = prev_t + wait_cost
                         boarding_station = s_curr
