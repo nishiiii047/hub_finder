@@ -84,15 +84,15 @@ def format_route_display(path, graph):
 # --- 2. グラフ構築 ---
 def build_graph():
     graph = {}
-    LINE_SPEEDS = {
-        "JR": 55.0, "JR山手線": 45.0, "JR中央線(快速)": 65.0, 
-        "JR埼京線": 60.0, "Subway": 35.0, "都営大江戸線": 30.0
-    }
     STOP_PENALTY = 1.0 
+    
+    # デフォルト設定（データがない路線用）
+    DEFAULT_CONF = {"speed_kmh": 40.0, "interval_min": 8}
 
     for line_name, stations in data.TOKYO_LINES.items():
-        speed = LINE_SPEEDS.get(line_name)
-        if not speed: speed = LINE_SPEEDS["JR"] if "JR" in line_name else LINE_SPEEDS["Subway"]
+        # その路線の設定を取得
+        conf = data.LINE_CONFIG.get(line_name, DEFAULT_CONF)
+        speed = conf["speed_kmh"]
 
         for i in range(len(stations) - 1):
             st1, st2 = stations[i], stations[i+1]
@@ -104,12 +104,15 @@ def build_graph():
                 loc1 = data.STATION_LOCATIONS[st1]
                 loc2 = data.STATION_LOCATIONS[st2]
                 dist_km = calculate_distance_km(loc1[0], loc1[1], loc2[0], loc2[1])
+                
+                # 時間 = (距離 * 1.2 / 時速) * 60 + 停車ロス
                 calc_time = (dist_km * 1.2 / speed) * 60 + STOP_PENALTY
                 travel_time = max(calc_time, 1.0)
             
             graph[st1][st2] = min(graph[st1].get(st2, float('inf')), travel_time)
             graph[st2][st1] = min(graph[st2].get(st1, float('inf')), travel_time)
 
+        # 環状線（山手線・大江戸線）の接続
         if line_name in ["JR山手線", "都営大江戸線"]:
             first, last = stations[0], stations[-1]
             if first not in graph: graph[first] = {}
@@ -126,6 +129,7 @@ def build_graph():
             graph[first][last] = min(graph[first].get(last, float('inf')), travel_time)
             graph[last][first] = min(graph[last].get(first, float('inf')), travel_time)
 
+    # (B) 徒歩ルート（ここは変更なし）
     station_names_with_loc = list(data.STATION_LOCATIONS.keys())
     MAX_WALK_DIST_KM = 0.8
 
@@ -149,25 +153,22 @@ def build_graph():
 
 # --- 3. ダイクストラ法 ---
 def get_shortest_path(graph, start_node, end_node):
-    # 乗り換え抵抗（分）: ホーム移動や電車待ち時間として加算
-    TRANSFER_PENALTY = 5.0
-
     if start_node == end_node: return 0, [start_node]
     
     # 優先度付きキュー: (経過時間, 現在地, 経路リスト, 直前の路線名)
-    # スタート地点では「直前の路線」は None
     queue = [(0, start_node, [start_node], None)]
     
     # 訪問済み記録: (ノード, 到着した路線) -> 最短時間
-    # 同じ駅でも「銀座線で来た場合」と「JRで来た場合」で次の展開が違うため区別する
     visited = {}
+    
+    # デフォルト設定（データがない路線用）
+    DEFAULT_CONF = {"speed_kmh": 40.0, "interval_min": 8}
 
     while queue:
         cost, current_node, path, prev_line = heapq.heappop(queue)
         
         if current_node == end_node: return cost, path
         
-        # 既により早いルートでこの駅・この路線で到着しているならスキップ
         state_key = (current_node, prev_line)
         if state_key in visited and visited[state_key] <= cost:
             continue
@@ -175,40 +176,37 @@ def get_shortest_path(graph, start_node, end_node):
 
         if current_node in graph:
             for neighbor, weight in graph[current_node].items():
-                # 次の移動で使う路線を判定
                 next_line = get_connecting_line_name(current_node, neighbor)
-                
-                # 追加コストの計算
                 added_cost = 0
                 
-                # 路線が変わる場合（乗り換え）の判定
+                # --- 乗り換えロジック (Level 2) ---
                 if prev_line is not None and next_line != prev_line:
-                    # 1. 電車同士の乗り換え（例: 山手線 -> 中央線）
-                    if prev_line != "徒歩" and next_line != "徒歩":
-                        added_cost = TRANSFER_PENALTY
+                    # 次に乗る路線のデータを取得
+                    conf = data.LINE_CONFIG.get(next_line, DEFAULT_CONF)
+                    interval = conf["interval_min"]
                     
-                    # 2. 徒歩から電車への乗り換え（例: 徒歩移動 -> 銀座線）
-                    #    ※改札入り、ホームへ降り、電車を待つ時間
+                    # 待ち時間コスト = 平均待ち時間(間隔/2) + ホーム移動(2分)
+                    wait_cost = (interval / 2.0) + 2.0
+                    
+                    # 1. 電車同士の乗り換え
+                    if prev_line != "徒歩" and next_line != "徒歩":
+                        added_cost = wait_cost
+                    
+                    # 2. 徒歩から電車への乗り換え
                     elif prev_line == "徒歩" and next_line != "徒歩":
-                        added_cost = TRANSFER_PENALTY
+                        added_cost = wait_cost
                         
-                    # 3. 電車から徒歩へ（例: 山手線 -> 徒歩移動）
-                    #    ※降りて歩き出すだけなのでペナルティなし（歩行時間はweightに含まれる）
+                    # 3. 電車から徒歩へ（待ち時間なし）
                     else:
                         added_cost = 0
+                # -------------------------------
                 
                 new_cost = cost + weight + added_cost
-                
-                # キューに追加
                 heapq.heappush(queue, (new_cost, neighbor, path + [neighbor], next_line))
 
     return float('inf'), []
 
 # --- 4. UI ---
-# app.py 内の station_selector 関数を修正
-
-# app.py の station_selector 関数をこれに置き換えてください
-
 def station_selector(label, key_prefix):
     # --- 1. 全駅のリストアップと整形 ---
     # 選択肢リストを作成: [{"display": "蒲田 【JR京浜東北線】", "raw": "蒲田", "line": "JR京浜東北線", "reading": "かまた"}, ...]

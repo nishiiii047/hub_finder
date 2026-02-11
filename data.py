@@ -1,28 +1,30 @@
 # 路線ごとの「一駅あたりの平均所要時間（分）」
 # ※アプリ側で座標計算を行いますが、座標データがない場合のバックアップとして使用されます
 LINE_CONFIG = {
-    # JR
-    "JR山手線": 3,
-    "JR京浜東北線": 3,
-    "JR中央線(快速)": 4, 
-    "JR総武線(各停)": 2,
-    "JR埼京線": 4,
-    "JR湘南新宿ライン": 5,
-    # 東京メトロ
-    "銀座線": 2,
-    "丸ノ内線": 2,
-    "日比谷線": 2,
-    "東西線": 3, 
-    "千代田線": 2,
-    "有楽町線": 2,
-    "半蔵門線": 3,
-    "南北線": 2,
-    "副都心線": 2,
-    # 都営地下鉄
-    "都営浅草線": 2,
-    "都営三田線": 2,
-    "都営新宿線": 3,
-    "都営大江戸線": 2,
+    # --- JR（主要幹線） ---
+    "JR山手線":       {"speed_kmh": 45.0, "interval_min": 3}, # 頻繁に来る
+    "JR京浜東北線":   {"speed_kmh": 50.0, "interval_min": 5},
+    "JR中央線(快速)": {"speed_kmh": 65.0, "interval_min": 4}, # 速くて多い
+    "JR総武線(各停)": {"speed_kmh": 45.0, "interval_min": 5},
+    "JR埼京線":       {"speed_kmh": 60.0, "interval_min": 10}, # 速いが待ち長い
+    "JR湘南新宿ライン": {"speed_kmh": 70.0, "interval_min": 15}, # 爆速だが来ない
+
+    # --- 地下鉄（都心） ---
+    "銀座線":         {"speed_kmh": 35.0, "interval_min": 3}, # 遅いがすぐ来る
+    "丸ノ内線":       {"speed_kmh": 35.0, "interval_min": 3},
+    "日比谷線":       {"speed_kmh": 35.0, "interval_min": 5},
+    "東西線":         {"speed_kmh": 45.0, "interval_min": 4}, # 快速区間あり
+    "千代田線":       {"speed_kmh": 40.0, "interval_min": 5},
+    "有楽町線":       {"speed_kmh": 40.0, "interval_min": 6},
+    "半蔵門線":       {"speed_kmh": 40.0, "interval_min": 5},
+    "南北線":         {"speed_kmh": 35.0, "interval_min": 6},
+    "副都心線":       {"speed_kmh": 45.0, "interval_min": 6},
+
+    # --- 都営地下鉄 ---
+    "都営浅草線":     {"speed_kmh": 40.0, "interval_min": 7},
+    "都営三田線":     {"speed_kmh": 40.0, "interval_min": 6},
+    "都営新宿線":     {"speed_kmh": 45.0, "interval_min": 6}, # 急行あり
+    "都営大江戸線":   {"speed_kmh": 30.0, "interval_min": 6}, # 深い・遅い
 }
 
 # 路線ごとの駅リスト
