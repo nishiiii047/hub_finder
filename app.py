@@ -161,7 +161,7 @@ def station_selector(label, key_prefix):
         search_query = st.text_input(
             f"{label}駅を検索", 
             key=f"{key_prefix}_search",
-            placeholder="ひらがなで検索 (例: か)",
+            placeholder="ひらがなで絞り込み (例: か)",
             label_visibility="collapsed" 
         )
         
