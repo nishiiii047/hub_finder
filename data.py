@@ -10,16 +10,16 @@ LINE_CONFIG = {
     "丸ノ内線": {"speed_kmh": 32.1, "interval_min": 3},  # (現在 32.1 → 変更 +0.0)
     "副都心線": {"speed_kmh": 49.5, "interval_min": 6},  # (現在 49.5 → 変更 +0.0)
     "千代田線": {"speed_kmh": 41.5, "interval_min": 5},  # (現在 41.5 → 変更 +0.0)
-    "半蔵門線": {"speed_kmh": 40.2, "interval_min": 5},  # (現在 43.4 → 変更 -3.2)
+    "半蔵門線": {"speed_kmh": 40.2, "interval_min": 5},  # (現在 40.2 → 変更 +0.0)
     "南北線": {"speed_kmh": 35.0, "interval_min": 6},  # (実測データなし、現在値を維持)
     "日比谷線": {"speed_kmh": 35.8, "interval_min": 5},  # (現在 35.8 → 変更 +0.0)
     "有楽町線": {"speed_kmh": 40.0, "interval_min": 6},  # (実測データなし、現在値を維持)
     "東西線": {"speed_kmh": 42.0, "interval_min": 4},  # (現在 42.0 → 変更 +0.0)
     "都営三田線": {"speed_kmh": 40.4, "interval_min": 6},  # (現在 40.4 → 変更 +0.0)
-    "都営大江戸線": {"speed_kmh": 29.5, "interval_min": 6},  # (現在 29.5 → 変更 +0.0)
+    "都営大江戸線": {"speed_kmh": 35.5, "interval_min": 6},  # (現在 29.5 → 変更 +6.0)
     "都営新宿線": {"speed_kmh": 45.0, "interval_min": 6},  # (実測データなし、現在値を維持)
-    "都営浅草線": {"speed_kmh": 29.5, "interval_min": 7},  # (現在 29.5 → 変更 +0.0)
-    "銀座線": {"speed_kmh": 50.4, "interval_min": 3},  # (現在 50.4 → 変更 +0.0)
+    "都営浅草線": {"speed_kmh": 38.5, "interval_min": 7},  # (現在 29.5 → 変更 +9.0)
+    "銀座線": {"speed_kmh": 42.5, "interval_min": 3},  # (現在 50.4 → 変更 -7.9)
 }
 
 # 路線ごとの駅リスト
