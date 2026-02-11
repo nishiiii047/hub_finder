@@ -2,29 +2,29 @@
 # ※アプリ側で座標計算を行いますが、座標データがない場合のバックアップとして使用されます
 LINE_CONFIG = {
     # --- JR（主要幹線） ---
-    "JR山手線":       {"speed_kmh": 40.0, "interval_min": 3},  # 45.0 → 38.0
-    "JR京浜東北線":   {"speed_kmh": 45.0, "interval_min": 5},  # 50.0 → 42.0
-    "JR中央線(快速)": {"speed_kmh": 50.0, "interval_min": 4},  # 65.0 → 50.0
-    "JR総武線(各停)": {"speed_kmh": 38.0, "interval_min": 5},  # 45.0 → 38.0
-    "JR埼京線":       {"speed_kmh": 52.0, "interval_min": 10}, # 60.0 → 52.0
-    "JR湘南新宿ライン": {"speed_kmh": 60.0, "interval_min": 15}, # 70.0 → 60.0
+    "JR山手線":       {"speed_kmh": 47.5, "interval_min": 3},   # 実測データから最適化
+    "JR京浜東北線":   {"speed_kmh": 44.0, "interval_min": 5},   # 実測データから最適化
+    "JR中央線(快速)": {"speed_kmh": 48.6, "interval_min": 4},   # 実測データから最適化
+    "JR総武線(各停)": {"speed_kmh": 43.7, "interval_min": 5},   # 実測データから最適化
+    "JR埼京線":       {"speed_kmh": 60.0, "interval_min": 10},  # 実測データなし、推定値
+    "JR湘南新宿ライン": {"speed_kmh": 70.0, "interval_min": 15}, # 実測データなし、推定値
 
     # --- 地下鉄（都心） ---
-    "銀座線":         {"speed_kmh": 50.0, "interval_min": 3},  # 35.0 → 50.0
-    "丸ノ内線":       {"speed_kmh": 48.0, "interval_min": 3},  # 35.0 → 48.0
-    "日比谷線":       {"speed_kmh": 45.0, "interval_min": 5},  # 35.0 → 45.0
-    "東西線":         {"speed_kmh": 52.0, "interval_min": 4},  # 45.0 → 52.0
-    "千代田線":       {"speed_kmh": 48.0, "interval_min": 5},  # 40.0 → 48.0
-    "有楽町線":       {"speed_kmh": 48.0, "interval_min": 6},  # 40.0 → 48.0
-    "半蔵門線":       {"speed_kmh": 48.0, "interval_min": 5},  # 40.0 → 48.0
-    "南北線":         {"speed_kmh": 45.0, "interval_min": 6},  # 35.0 → 45.0
-    "副都心線":       {"speed_kmh": 52.0, "interval_min": 6},  # 45.0 → 52.0
+    "銀座線":         {"speed_kmh": 50.4, "interval_min": 3},   # 実測データから最適化
+    "丸ノ内線":       {"speed_kmh": 32.1, "interval_min": 3},   # 実測データから最適化
+    "日比谷線":       {"speed_kmh": 35.8, "interval_min": 5},   # 実測データから最適化
+    "東西線":         {"speed_kmh": 42.0, "interval_min": 4},   # 実測データから最適化
+    "千代田線":       {"speed_kmh": 41.5, "interval_min": 5},   # 実測データから最適化
+    "有楽町線":       {"speed_kmh": 40.0, "interval_min": 6},   # 実測データなし、推定値
+    "半蔵門線":       {"speed_kmh": 47.8, "interval_min": 5},   # 実測データから最適化
+    "南北線":         {"speed_kmh": 35.0, "interval_min": 6},   # 実測データなし、推定値
+    "副都心線":       {"speed_kmh": 49.5, "interval_min": 6},   # 実測データから最適化
 
     # --- 都営地下鉄 ---
-    "都営浅草線":     {"speed_kmh": 42.0, "interval_min": 7},  # 40.0 → 48.0
-    "都営三田線":     {"speed_kmh": 45.0, "interval_min": 6},  # 40.0 → 48.0
-    "都営新宿線":     {"speed_kmh": 50.0, "interval_min": 6},  # 45.0 → 52.0
-    "都営大江戸線":   {"speed_kmh": 37.0, "interval_min": 6},  # 30.0 → 38.0
+    "都営浅草線":     {"speed_kmh": 29.5, "interval_min": 7},   # 実測データから最適化
+    "都営三田線":     {"speed_kmh": 40.4, "interval_min": 6},   # 実測データから最適化
+    "都営新宿線":     {"speed_kmh": 45.0, "interval_min": 6},   # 実測データなし、推定値
+    "都営大江戸線":   {"speed_kmh": 29.5, "interval_min": 6},   # 実測データから最適化
 }
 
 # 路線ごとの駅リスト
