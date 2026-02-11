@@ -56,18 +56,15 @@ def format_route_display(path):
     
     return " → ".join(display_parts)
 
-# --- 2. グラフ構築（速度ロジック込み） ---
+# --- 2. グラフ構築 ---
 def build_graph():
     graph = {}
-    
-    # 路線ごとの平均速度設定 (km/h)
     LINE_SPEEDS = {
         "JR": 55.0, "JR山手線": 45.0, "JR中央線(快速)": 65.0, 
         "JR埼京線": 60.0, "Subway": 35.0, "都営大江戸線": 30.0
     }
     STOP_PENALTY = 1.0 
 
-    # (A) 電車ルート
     for line_name, stations in data.TOKYO_LINES.items():
         speed = LINE_SPEEDS.get(line_name)
         if not speed: speed = LINE_SPEEDS["JR"] if "JR" in line_name else LINE_SPEEDS["Subway"]
@@ -104,7 +101,6 @@ def build_graph():
             graph[first][last] = min(graph[first].get(last, float('inf')), travel_time)
             graph[last][first] = min(graph[last].get(first, float('inf')), travel_time)
 
-    # (B) 徒歩ルート
     station_names_with_loc = list(data.STATION_LOCATIONS.keys())
     MAX_WALK_DIST_KM = 0.8
 
@@ -135,7 +131,6 @@ def get_shortest_path(graph, start_node, end_node):
     while queue:
         cost, current_node, path = heapq.heappop(queue)
         if current_node == end_node: return cost, path
-        
         if current_node in visited and visited[current_node] <= cost: continue
         visited[current_node] = cost
 
@@ -162,15 +157,7 @@ st.markdown("全員の集合に最適な駅を計算します。")
 station_graph = build_graph()
 all_candidate_stations = sorted(list(station_graph.keys()))
 
-st.sidebar.header("検索設定")
-
-# 【追加】検索モードの選択
-search_mode = st.sidebar.radio(
-    "優先する条件",
-    ("合計時間優先（効率重視）", "公平性優先（格差是正）"),
-    help="合計優先：全員の移動時間の総和を最小にします。\n公平優先：一番遠い人の移動時間を最小にします。"
-)
-
+st.sidebar.header("参加者設定")
 num_members = st.sidebar.number_input("参加人数", 2, 5, 2)
 
 members_data = []
@@ -181,13 +168,20 @@ for i in range(num_members):
     members_data.append({"name": f"M{i+1}", "current": c_st, "next": n_st})
     st.markdown("---")
 
-if st.button("🚀 計算開始"):
+# --- ボタンエリア（横並び） ---
+col1, col2 = st.columns(2)
+# use_container_width=True でボタンをカラムいっぱいに広げて押しやすくする
+pressed_efficiency = col1.button("🚀 効率重視で検索\n(合計時間 最小)", use_container_width=True)
+pressed_fairness = col2.button("⚖️ 公平重視で検索\n(最大時間 最小)", use_container_width=True)
+
+# どちらかのボタンが押されたら計算を実行
+if pressed_efficiency or pressed_fairness:
     results = []
     progress_bar = st.progress(0)
     total_candidates = len(all_candidate_stations)
 
     for idx, candidate in enumerate(all_candidate_stations):
-        individual_times = [] # 各メンバーの所要時間を記録
+        individual_times = []
         details = []
         is_reachable = True
 
@@ -200,21 +194,19 @@ if st.button("🚀 計算開始"):
                 break
             
             total_t = t1 + t2
-            individual_times.append(total_t) # 個人の時間をリストに追加
+            individual_times.append(total_t)
             
             route_str_1 = format_route_display(path1)
             route_str_2 = format_route_display(path2)
             details.append(f"**{m['name']}** ({int(total_t)}分)\n- 往: {route_str_1}\n- 復: {route_str_2}")
 
         if is_reachable:
-            # 合計時間と、最大時間（一番かわいそうな人の時間）を計算
             sum_time = sum(individual_times)
             max_time = max(individual_times)
-            
             results.append({
                 "station": candidate,
-                "total_time": sum_time, # 合計
-                "max_time": max_time,   # 最大
+                "total_time": sum_time,
+                "max_time": max_time,
                 "details": details
             })
         
@@ -224,28 +216,31 @@ if st.button("🚀 計算開始"):
     progress_bar.progress(1.0)
 
     if results:
-        # 【変更点】選ばれたモードによってソート順を変える
-        if search_mode == "合計時間優先（効率重視）":
-            # 今まで通り、合計時間が短い順
+        # 押されたボタンに応じてソート順と表示メッセージを変える
+        if pressed_efficiency:
+            # 効率重視：合計時間が短い順
             results.sort(key=lambda x: x["total_time"])
-            metric_label = "全員の移動時間合計"
-            metric_value = f"{results[0]['total_time']:.1f} 分"
-            sub_metric = f"(最大移動: {results[0]['max_time']:.1f} 分)"
+            mode_name = "効率重視（合計時間最小）"
+            main_metric_label = "全員の移動時間合計"
+            main_metric_val = results[0]['total_time']
+            sub_metric_label = "最大移動時間"
+            sub_metric_val = results[0]['max_time']
         else:
-            # 公平優先：最大時間が短い順（同じなら合計時間で判定）
+            # 公平重視：最大時間が短い順
             results.sort(key=lambda x: (x["max_time"], x["total_time"]))
-            metric_label = "一番遠い人の移動時間"
-            metric_value = f"{results[0]['max_time']:.1f} 分"
-            sub_metric = f"(合計時間: {results[0]['total_time']:.1f} 分)"
+            mode_name = "公平重視（最大時間最小）"
+            main_metric_label = "一番遠い人の移動時間"
+            main_metric_val = results[0]['max_time']
+            sub_metric_label = "合計移動時間"
+            sub_metric_val = results[0]['total_time']
 
         best = results[0]
         
-        st.success(f"👑 最適な集合場所: **{best['station']}** ({search_mode})")
+        st.success(f"👑 最適な集合場所: **{best['station']}** ({mode_name})")
         
-        # 結果表示のカラム分け
-        col1, col2 = st.columns(2)
-        col1.metric(metric_label, metric_value)
-        col2.metric("参考指標", sub_metric)
+        col_res1, col_res2 = st.columns(2)
+        col_res1.metric(main_metric_label, f"{main_metric_val:.1f} 分")
+        col_res2.metric(f"参考: {sub_metric_label}", f"{sub_metric_val:.1f} 分")
         
         with st.expander("詳細経路を見る", expanded=True):
             st.write(f"### 集合場所: {best['station']}")
@@ -255,7 +250,7 @@ if st.button("🚀 計算開始"):
         st.write("---")
         st.write("#### 🥈 その他の候補")
         for r in results[1:6]:
-            if search_mode == "合計時間優先（効率重視）":
+            if pressed_efficiency:
                 st.write(f"**{r['station']}**: 合計 {r['total_time']:.1f} 分 (最大 {r['max_time']:.1f} 分)")
             else:
                 st.write(f"**{r['station']}**: 最大 {r['max_time']:.1f} 分 (合計 {r['total_time']:.1f} 分)")
